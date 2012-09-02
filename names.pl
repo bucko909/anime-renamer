@@ -4,19 +4,33 @@ use warnings;
 use strict;
 
 use CGI;
-use Net::BitTorrent::File;
 
 our @exts = qw/avi mpg mp4 ogm mkv wmv ass flac/;
 our @mediadirs = qw#
+	/disks/media1
+	/disks/media2
+	/disks/media3
+	/disks/media4
+	/disks/media5
+	/disks/media6
+	/disks/media7
+	/disks/media8
+	/disks/media9
+	/disks/mediaa
+	/disks/mediab
+	/disks/mediac
+	/disks/mediad
+	/disks/mediae
+	/disks/mediaf
 	#;
 #our @notdirs = qw#/media/peer2peer/btcurrent /media/peer2peer/btwaiting /media/peer2peer/btpaused#;
 #our $azdir = "/media/peer3peer/azureus_torrents";
 our $union = "/union/all";
 our $LOG = "/home/bucko/public_html/btlog";
 
-our $root = "/media/sdg1";
+our $root = "/disks/media0/public/peer2peer/";
 
-our @search = qw/lan/;
+our @search = qw/completed/;
 
 
 
@@ -32,44 +46,35 @@ our @series_episode = (
 	[qr/(?:-\s+)?\bOVA\s*(?:-\s+)?(\d+)/i => [OVA => '$1']],
 	[qr/(?:-\s+)?\b(?:Creditless\s+(ED|OP))\s*(\d+[ab]?)/i => [undef, ['NC$1' => '$02']]],
 	[qr/(?:-\s+)?\b(?:Creditless\s+(ED|OP))\b/i => [undef, 'NC$1']],
-	[qr/(?:-\s+)?(?:Ep\s*(\d+))\s+\b(?:Creditless\s+Ending)\b/i => [undef, 'NCED - Ep$01']],
-	[qr/(?:-\s+)?(?:Ep\s*(\d+))\s+\b(?:Creditless\s+Opening)\b/i => [undef, 'NCOP - Ep$01']],
 	[qr/(?:-\s+)?\b(?:Intro(?:duction)?)\s*(\d+[ab]?)/i => [undef, [Introduction => '$1']]],
 	[qr/(?:-\s+)?\b(?:Intro(?:duction)?)\b/i => [undef, 'Introduction']],
 	[qr/(?:-\s+)?\b(?:Commentary)\s*(\d+[ab]?)/i => [undef, [Commentary => '$1']]],
 	[qr/(?:-\s+)?\b(?:Commentary)\b/i => [undef, 'Commentary']],
 	[qr/(?:-\s+)?\b(?:Opening)\s*(\d+[ab]?)/i => [undef, [OP => '$1']]],
-	[qr/(?:-\s+)?\b(?:Opening)\s*(?:-\s+)?(.+?)\s*$/i => [undef, [OP => '$1']]],
 	[qr/(?:-\s+)?\b(?:Opening)\b/i => [undef, 'OP']],
 	[qr/(?:-\s+)?\b(?:Ending)\s*(\d+[ab]?)/i => [undef, [ED => '$1']]],
-	[qr/(?:-\s+)?\b(?:Ending)\s*(?:-\s+)?(.+?)\s*$/i => [undef, [ED => '$1']]],
 	[qr/(?:-\s+)?\b(?:Ending)\b/i => [undef, 'ED']],
-	[qr/(?:-\s+)?\b((?:NC)?(?:ED|OP)|PV)\s*(\d+[ab]?)/i => [undef, ['$1' => '$02']]],
-	[qr/(?:-\s+)?\b((?:NC)?(?:ED|OP)|PV)\b/i => [undef, '$1']],
-	[qr/(?:-\s+)?\b(?:(?-i:SP)|Special)\s*(?:-\s+)?(\d+)/i => [undef, [Special => '$01']]],
-	[qr/(?:-\s+)?\b(?:(?-i:SP)|Special)\s*(?:-\s+)?(.+?)\s*$/i => [undef, ['Special -' => '$01']]],
-	[qr/(?:-\s+)?\b(?:(?-i:SP)|Special)\b\s*/i => [undef, ['Special']]],
-	[qr/-\s+(?:[Ee]ps\s*)(\d+-\d+)/ => [undef, '$01']],
-	[qr/-\s+(?:[Ee](?:p\s*)?)(\d+)\s+-\s+([^\[\]\(\)]+)/ => [undef, '$01 - $2']],
-	[qr/\s+(?:[Ee](?:p\s*)?)(\d+)\s+-\s+([^\[\]\(\)]+)/ => [undef, '$01 - $2']],
-	[qr/\s+(\d+)\s+-\s+([^\[\]\(\)]+)/ => [undef, '$01 - $2']],
-	[qr/-\s+(?:[Ee](?:p\s*)?)(\d+)\s+'([^']+)'/ => [undef, '$01 - $2']],
-	[qr/\s+(?:[Ee](?:p\s*)?)(\d+)\s+'([^']+)'/ => [undef, '$01 - $2']],
-	[qr/\s+(?:[Ee](?:p\s*)?)(\d+)\s+(.+)/ => [undef, '$01 - $2']],
-	[qr/-\s+(?:[Ee](?:p\s*)?)(\d+)(?:v\d)?/ => [undef, '$01']],
-	[qr/\s+(?:[Ee](?:p?\s*)?)(\d+)(?:v\d)?/ => [undef, '$01']],
-	[qr/-\s+(\d+)(?:v\d)?/ => [undef, '$01']],
-	[qr/\s+(\d+)(?:v\d)?/ => [undef, '$01']],
+	[qr/(?:-\s+)?\b((?:NC)?(?:ED|OP|Pilot)|PV)\s*(\d+[ab]?)/i => [undef, ['$1' => '$02']]],
+	[qr/(?:-\s+)?\b((?:NC)?(?:ED|OP|Pilot)|PV)\b/i => [undef, '$1']],
+	[qr/(?:-\s+)?\b(?:(?-i:SP)|Specials?)\s*(?:-\s+)?(\d+)/i => [undef, [Special => '$01']]],
+	[qr/(?:-\s+)?\b(?:(?-i:SP)|Specials?)\s*(?:-\s+)?(.*?)\s*$/i => [undef, ['Special -' => '$01']]],
+	[qr/(?:-\s+)?\b(?:(?-i:SP)|Specials?)\b\s*/i => [undef, ['Special']]],
+	[qr/-\s+(?:eps\s*)?(\d+-\d+)/ => [undef, '$01']],
+	[qr/-\s+(?:ep\s*)?(\d+\s+-\s+[^\[\]\(\)]+)/ => [undef, '$01']],
+	[qr/-\s+(?:ep\s*)?(\d+)(?:v\d)?/ => [undef, '$01']],
+	[qr/\s+(?:ep\s*)?(\d+)(?:v\d)?/ => [undef, '$01']],
 );
 
 our @video_modes = (
 	[qr/(h|x)264/i => 'h264'],
+	[qr/10bit/i => '10bit'],
 	[qr/xvid/i => 'XviD'],
 	[qr/x1080|1080p/ => '1080p'],
 	[qr/x720|720p/ => '720p'],
 	[qr/x480|480p/ => '480p'],
 	[qr/x560|560p/ => '560p'],
 	[qr/Blu-Ray|BD/i => 'BD'],
+	[qr/DVD/i => 'DVD'],
 );
 
 our @junk = (
@@ -105,6 +110,19 @@ if ($mode eq 'rename') {
 	$qf =~ s/"/\\"/g;
 	my $qt = "$dir/$to";
 	$qt =~ s/"/\\"/g;
+	if (-e "$dir/$to") {
+		my $err = `diff "$qf" "$qt" 2>&1`;
+		if ($err) {
+			chomp $err;
+			print "<p>Target file exists and differs: $err</p>\n";
+			print $q->end_html;
+			exit;
+		}
+		print "<p>Unlinking...</p>\n";
+		print $q->end_html;
+		unlink("$root/$file");
+		exit;
+	}
 	if (my $err = `mv -n "$qf" "$qt" 2>&1`){
 		chomp $err;
 		print "<p>Failed to rename: $err</p>\n";
@@ -134,9 +152,9 @@ my @dirs = map {[$_, ""]} @search;
 my @files;
 while(@dirs) {
 	my ($dir, $subdir) = @{shift @dirs};
-	opendir DIR, "$root/$dir" or die "$root/$dir: $!";
+	opendir DIR, "$root/$dir";
 	while($_ = readdir DIR) {
-		if ( -d "$root/$dir/$_" && !/^\.*$/)
+		if ( -d "$root/$dir/$_" && !/^\.*$/ && ! -l "$root/$dir/$_" )
 		{
 			push @dirs, ["$dir/$_", "$subdir/$_"];
 			next;
@@ -197,7 +215,7 @@ foreach my $bits (@files) {
 	} elsif ($fname =~ /^\./) {
 		$fname = "$sname$fname";
 	} else {
-		$fname = "$sname $fname";
+		$fname = "$sname - $fname";
 	}
 
 	print "<tr>";
@@ -229,10 +247,6 @@ sub decode_name {
 
 	my $group;
 	my @vdetails;
-	if ($fname =~ s/[_ ]-[_ ]THORA//i) {
-		# Bastards
-		$group = 'THORA';
-	}
 	for my $gubb (@gubbins) {
 		next if grep { $gubb =~ /$_/ } @junk;
 		my $vmode_got;
@@ -297,16 +311,14 @@ sub decode {
 }
 
 sub maybe_num {
-	my ($data, $varnum) = @_;
-	if (($data =~ /^[0-9]+$/) && ($varnum =~ /^0\d/)) {
-		return sprintf("%02i", $data);
+	if ($_[0] && $_[0] =~ /^[0-9]+$/ && $_[1] && $_[1] =~ /^0\d/) {
+		return sprintf("%02i", $_[0]);
 	}
-	return $data;
+	return $_[0];
 }
 
 sub find_dir {
 	my $dir = $_[0];
-	return ('/', $dir);
 	my $tdir = lc $dir;
 	$tdir =~ s/[ .!-]//g;
 
@@ -388,7 +400,7 @@ sub file_list {
 
 sub url_encode {
 	my $temp = $_[0];
-	#$temp =~ s/([^A-Za-z0-9])/"%".unpack('H2',$1)/eg;
+	$temp =~ s/([^A-Za-z0-9])/"%".unpack('H2',$1)/eg;
 	return $temp;
 }
 
